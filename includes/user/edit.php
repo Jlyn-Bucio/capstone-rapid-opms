@@ -27,13 +27,19 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $name = trim($_POST["name"]);
     $email = trim($_POST["email"]);
     $position = $_POST["position"];
+    $password = $_POST["password"] ?? '';
 
     if (empty($name) || empty($email) || empty($position)) {
         $error = "All fields are required.";
     } else {
-        // Prepare the update statement
-        $update_stmt = $conn->prepare("UPDATE users SET name = ?, email = ?, position = ? WHERE id = ?");
-        $update_stmt->bind_param("sssi", $name, $email, $position, $user_id);
+        if (!empty($password)) {
+            $hashed = password_hash($password, PASSWORD_DEFAULT);
+            $update_stmt = $conn->prepare("UPDATE users SET name = ?, email = ?, position = ?, password = ? WHERE id = ?");
+            $update_stmt->bind_param("ssssi", $name, $email, $position, $hashed, $user_id);
+        } else {
+            $update_stmt = $conn->prepare("UPDATE users SET name = ?, email = ?, position = ? WHERE id = ?");
+            $update_stmt->bind_param("sssi", $name, $email, $position, $user_id);
+        }
 
         if ($update_stmt->execute()) {
             $_SESSION['success_message'] = "User updated successfully!";
@@ -82,6 +88,11 @@ $stmt->close();
                                 <option value="Project Management" <?= $user['position'] === 'Project Management' ? 'selected' : '' ?>>Project Management</option>
                                 <option value="Accountant" <?= $user['position'] === 'Accountant' ? 'selected' : '' ?>>Accountant</option>
                             </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="password" class="form-label">New Password (leave blank to keep current)</label>
+                            <input type="password" id="password" name="password" class="form-control" autocomplete="new-password">
                         </div>
 
                         <div class="d-flex justify-content-end gap-2">

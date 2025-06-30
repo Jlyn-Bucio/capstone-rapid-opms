@@ -15,7 +15,7 @@ $suppliers = mysqli_query($conn, "SELECT * FROM suppliers ORDER BY name ASC");
       <h5><i class="fa fa-plus me-2"></i>Add New Product</h5>
     </div>
 
-    <form action="../../includes/inventory/save.php" method="POST" enctype="multipart/form-data">
+    <form action="includes/inventory/save.php" method="POST" enctype="multipart/form-data">
       <div class="row">
         
         <!-- Left Column -->
@@ -91,7 +91,7 @@ $suppliers = mysqli_query($conn, "SELECT * FROM suppliers ORDER BY name ASC");
       </div> <!-- End row -->
 
       <div class="mt-4 d-flex justify-content-between">
-        <a href="main.php?page=inventory/product_details" class="btn btn-secondary">
+        <a href="main.php?page=inventory/list" class="btn btn-secondary">
           <i class="fa fa-arrow-left me-1"></i> Back to Inventory
         </a>
         <button type="submit" class="btn btn-primary">

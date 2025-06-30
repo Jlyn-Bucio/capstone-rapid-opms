@@ -1,5 +1,5 @@
 <!-- sidebar.php -->
-<div id="sidebar" class="sidebar text-black" style="background-color: #B0AFAF;">
+<div id="sidebar" class="sidebar text-black">
   <div class="sidebar-header text-center py-4">
     <img src="assets/pic/companylogo.png" alt="Logo" class="img-fluid mb-2" style="max-height: 60px;" />
     <h4 class="mb-0">Rapid Concretech</h4>
@@ -13,9 +13,9 @@
     </a>
 
     <!-- User Management -->
-    <div class="accordion-item border-0" style="background-color: #B0AFAF;">
+    <div class="accordion-item border-0">
       <h2 class="accordion-header">
-        <button class="accordion-button collapsed text-black" type="button" data-bs-toggle="collapse" data-bs-target="#collapseUsers" style="background-color: #B0AFAF;">
+        <button class="accordion-button collapsed text-black" type="button" data-bs-toggle="collapse" data-bs-target="#collapseUsers">
           <i class="fas fa-users"></i><span class="d-none d-sm-inline ms-2">User Management</span>
         </button>
       </h2>
@@ -32,9 +32,9 @@
     </div>
 
     <!-- Project Management -->
-    <div class="accordion-item border-0" style="background-color: #B0AFAF;">
+    <div class="accordion-item border-0">
       <h2 class="accordion-header">
-        <button class="accordion-button collapsed text-black" type="button" data-bs-toggle="collapse" data-bs-target="#collapseProjects" style="background-color: #B0AFAF;">
+        <button class="accordion-button collapsed text-black" type="button" data-bs-toggle="collapse" data-bs-target="#collapseProjects">
           <i class="fas fa-project-diagram me-2"></i><span class="d-none d-sm-inline">Project Management</span>
         </button>
       </h2>
@@ -51,9 +51,9 @@
     </div>
 
     <!-- Billing -->
-    <div class="accordion-item border-0" style="background-color: #B0AFAF;">
+    <div class="accordion-item border-0">
       <h2 class="accordion-header">
-        <button class="accordion-button collapsed text-black" type="button" data-bs-toggle="collapse" data-bs-target="#collapseBilling" style="background-color: #B0AFAF;">
+        <button class="accordion-button collapsed text-black" type="button" data-bs-toggle="collapse" data-bs-target="#collapseBilling">
           <i class="fas fa-file-invoice-dollar me-2"></i><span class="d-none d-sm-inline">Billing</span>
         </button>
       </h2>
@@ -70,9 +70,9 @@
     </div>
 
     <!-- Inventory -->
-    <div class="accordion-item border-0" style="background-color: #B0AFAF;">
+    <div class="accordion-item border-0">
       <h2 class="accordion-header">
-        <button class="accordion-button collapsed text-black" type="button" data-bs-toggle="collapse" data-bs-target="#collapseInventory" style="background-color: #B0AFAF;">
+        <button class="accordion-button collapsed text-black" type="button" data-bs-toggle="collapse" data-bs-target="#collapseInventory">
           <i class="fas fa-boxes me-2"></i><span class="d-none d-sm-inline">Inventory</span>
         </button>
       </h2>
@@ -89,9 +89,9 @@
     </div>
 
     <!-- Suppliers -->
-    <div class="accordion-item border-0" style="background-color: #B0AFAF;">
+    <div class="accordion-item border-0">
       <h2 class="accordion-header">
-        <button class="accordion-button collapsed text-black" type="button" data-bs-toggle="collapse" data-bs-target="#collapseSuppliers" style="background-color: #B0AFAF;">
+        <button class="accordion-button collapsed text-black" type="button" data-bs-toggle="collapse" data-bs-target="#collapseSuppliers">
           <i class="fas fa-truck me-2"></i><span class="d-none d-sm-inline">Suppliers</span>
         </button>
       </h2>
@@ -108,9 +108,9 @@
     </div>
 
     <!-- Customers -->
-    <div class="accordion-item border-0" style="background-color: #B0AFAF;">
+    <div class="accordion-item border-0">
       <h2 class="accordion-header">
-        <button class="accordion-button collapsed text-black" type="button" data-bs-toggle="collapse" data-bs-target="#collapseCustomers" style="background-color: #B0AFAF;">
+        <button class="accordion-button collapsed text-black" type="button" data-bs-toggle="collapse" data-bs-target="#collapseCustomers">
           <i class="fas fa-user-friends me-2"></i><span class="d-none d-sm-inline">Customers</span>
         </button>
       </h2>
@@ -127,9 +127,9 @@
     </div>
 
     <!-- Reports -->
-    <div class="accordion-item border-0" style="background-color: #B0AFAF;">
+    <div class="accordion-item border-0">
       <h2 class="accordion-header">
-        <button class="accordion-button collapsed text-black" type="button" data-bs-toggle="collapse" data-bs-target="#collapseReports" style="background-color: #B0AFAF;">
+        <button class="accordion-button collapsed text-black" type="button" data-bs-toggle="collapse" data-bs-target="#collapseReports">
           <i class="fas fa-chart-pie me-2"></i><span class="d-none d-sm-inline">Reports</span>
         </button>
       </h2>

@@ -12,7 +12,7 @@ $inventory = $conn->query("SELECT * FROM inventory ORDER BY id DESC");
         <div class="px-3 py-2 rounded mb-3" style="background-color: #d1d1d1; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);">
           <div class="d-flex justify-content-between align-items-center">
     <h4><i class="bi bi-box-seam me-2"></i>Inventory Management</h4>
-    <a href="main.php?page=add_product" class="btn btn-primary">
+    <a href="main.php?page=inventory/create" class="btn btn-primary">
       <i class="bi bi-plus-circle me-1"></i> Add New Product
     </a>
   </div>
@@ -38,27 +38,28 @@ $inventory = $conn->query("SELECT * FROM inventory ORDER BY id DESC");
             <tr>
               <td><?= $row['id'] ?></td>
               <td class="text-start">
-                <img src="<?= !empty($row['image']) ? htmlspecialchars($row['image']) : 'assets/no-image.png' ?>" width="30" height="30" class="me-2 rounded" alt="Product Image">
-                <?= htmlspecialchars($row['name']) ?>
+                <?= htmlspecialchars($row['product_title']) ?>
               </td>
               <td><span class="badge bg-info text-dark"><?= htmlspecialchars($row['category']) ?></span></td>
               <td><?= $row['quantity'] ?></td>
               <td>
                 <span class="badge bg-success"><?= $row['quantity'] ?> in stock</span>
               </td>
-              <td>₱<?= number_format($row['buy_price'], 2) ?></td>
-              <td>₱<?= number_format($row['sell_price'], 2) ?></td>
-              <td><?= date("M d, Y", strtotime($row['date_added'])) ?></td>
+              <td>₱<?= number_format($row['buying_price'], 2) ?></td>
+              <td>₱<?= number_format($row['selling_price'], 2) ?></td>
+              <td><?= date("M d, Y", strtotime($row['created_at'])) ?></td>
               <td>
-                <a href="main.php?page=view_product&id=<?= $row['id'] ?>" class="btn btn-sm btn-outline-info me-1" title="View">
-                  <i class="bi bi-eye-fill"></i>
-                </a>
-                <a href="main.php?page=edit_product&id=<?= $row['id'] ?>" class="btn btn-sm btn-outline-warning me-1" title="Edit">
-                  <i class="bi bi-pencil-fill"></i>
-                </a>
-                <a href="delete_product.php?id=<?= $row['id'] ?>" class="btn btn-sm btn-outline-danger" title="Delete" onclick="return confirm('Delete this product?')">
-                  <i class="bi bi-trash-fill"></i>
-                </a>
+                <div class="btn-group" role="group">
+                  <a href="main.php?page=inventory/view_product&id=<?= $row['id'] ?>" class="btn btn-sm btn-outline-info me-1" title="View">
+                    <i class="bi bi-eye-fill"></i>
+                  </a>
+                  <a href="main.php?page=inventory/edit_product&id=<?= $row['id'] ?>" class="btn btn-sm btn-outline-warning me-1" title="Edit">
+                    <i class="bi bi-pencil-fill"></i>
+                  </a>
+                  <a href="includes/inventory/delete_product.php?id=<?= $row['id'] ?>" class="btn btn-sm btn-outline-danger" title="Delete" onclick="return confirm('Delete this product?')">
+                    <i class="bi bi-trash-fill"></i>
+                  </a>
+                </div>
               </td>
             </tr>
           <?php endwhile; ?>

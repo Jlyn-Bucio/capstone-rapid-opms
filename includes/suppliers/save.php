@@ -2,7 +2,7 @@
 ini_set('display_errors', 1);
 error_reporting(E_ALL);
 
-include_once __DIR__ . '/includes/rapid_opms.php'; // Update path accordingly
+include_once __DIR__ . '/../../includes/rapid_opms.php';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Sanitize input data
@@ -26,7 +26,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if ($stmt->execute()) {
         // Redirect to suppliers list or success page
-        header("Location: index.php?page=supplier/list&msg=Supplier added successfully");
+        header("Location: /capstone-rapid-opms/main.php?page=suppliers/list&msg=Supplier added successfully");
         exit;
     } else {
         die("Execute failed: " . $stmt->error);

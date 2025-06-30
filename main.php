@@ -4,7 +4,29 @@ session_start();
 
 if (!isset($_SESSION["user_id"])) {
     header("Location: loggin.php");
-    exit();}
+    exit();
+}
+
+// Include database connection
+include_once 'includes/rapid_opms.php';
+
+// Fetch upcoming and current project dates for the calendar
+$project_events = [];
+$today_for_query = date('Y-m-d');
+$result = $conn->query("SELECT id, name, start_date FROM projects WHERE start_date >= '{$today_for_query}'");
+if ($result) {
+    while ($row = $result->fetch_assoc()) {
+        $date = date('Y-m-d', strtotime($row['start_date']));
+        if (!isset($project_events[$date])) {
+            $project_events[$date] = [];
+        }
+        $project_events[$date][] = [
+            'id' => $row['id'],
+            'name' => $row['name']
+        ];
+    }
+}
+
 ?>
 
 <!DOCTYPE html>
@@ -26,15 +48,16 @@ if (!isset($_SESSION["user_id"])) {
 
   /* CSS Variables */
   :root {
-    --bg-body: #fff;
-    --bg-sidebar: rgb(176, 175, 175);
-    --bg-accordion: rgb(176, 175, 175);
+    --bg-body:rgb(255, 255, 255, 0.23);
+    --bg-sidebar: white;
+    --bg-accordion: white;
     --bg-accordion-active: rgba(255, 255, 255, 0.23);
     --bg-accordion-hover: rgba(255, 255, 255, 0.15);
-    --bg-card: #fff;
+    --bg-card:rgba(170, 170, 170, 0.56);
+    --bg-dashboard:rgba(140, 212, 73, 0.56);
     --bg-overlay: rgba(0, 0, 0, 0.4);
-    --bg-logout: rgb(143, 31, 31);
-    --bg-logout-hover: rgb(211, 96, 96);
+    --bg-logout: rgb(180, 76, 76);
+    --bg-logout-hover: rgb(4, 4, 4);
     --text-dark: #000;
     --text-light: #fff;
     --font-main: Arial, sans-serif;
@@ -145,6 +168,9 @@ if (!isset($_SESSION["user_id"])) {
     margin-bottom: 1.5rem;
     color: var(--text-dark);
   }
+  .dashboard-card {
+    background-color: var(--bg-dashboard);
+  }
   .card:hover {
     transform: scale(1.02);
     transition: transform 0.2s ease-in-out;
@@ -220,6 +246,31 @@ if (!isset($_SESSION["user_id"])) {
       margin-left: 0;
     }
   }
+
+  .calendar-day {
+    text-align: center;
+    padding: 0.5rem 0;
+    border-radius: 50%;
+    transition: background-color 0.2s;
+    position: relative;
+  }
+  .calendar-day.today {
+    background-color: #0d6efd; /* Bootstrap Primary Blue */
+    color: white;
+    font-weight: bold;
+  }
+  .calendar-day.scheduled {
+    background-color: #ffc107; /* Bootstrap Warning Yellow */
+    color: black;
+  }
+  .calendar-day.today.scheduled {
+    background-image: linear-gradient(45deg, #0d6efd 50%, #ffc107 50%);
+  }
+  .calendar-day a {
+    color: inherit;
+    text-decoration: none;
+    display: block;
+  }
 </style>  
 <body >
 
@@ -281,59 +332,78 @@ if ($page) {
 
   // Calendar JS from your original code
   const calendarEl = document.getElementById("calendar");
-  const today = new Date();
-  let currentMonth = today.getMonth();
-  let currentYear = today.getFullYear();
+  if (calendarEl) {
+    const scheduledEvents = <?= json_encode($project_events); ?>;
+    const today = new Date();
+    let currentMonth = today.getMonth();
+    let currentYear = today.getFullYear();
 
-  function renderCalendar(month, year) {
-    const firstDay = new Date(year, month, 1);
-    const lastDay = new Date(year, month + 1, 0);
+    function renderCalendar(month, year) {
+      const firstDay = new Date(year, month, 1);
+      const lastDay = new Date(year, month + 1, 0);
+      const todayDateString = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
 
-    let html = '<div class="d-flex justify-content-between align-items-center bg-black text-white p-2">';
-    html += `<button onclick="changeMonth(-1)" class="btn btn-sm btn-light">&lt;</button>`;
-    html += `<span class="fw-bold">${firstDay.toLocaleString('default', { month: 'long' })} ${year}</span>`;
-    html += `<button onclick="changeMonth(1)" class="btn btn-sm btn-light">&gt;</button>`;
-    html += '</div>';
+      let html = '<div class="d-flex justify-content-between align-items-center bg-black text-white p-2">';
+      html += `<button onclick="changeMonth(-1)" class="btn btn-sm btn-light">&lt;</button>`;
+      html += `<span class="fw-bold">${firstDay.toLocaleString('default', { month: 'long' })} ${year}</span>`;
+      html += `<button onclick="changeMonth(1)" class="btn btn-sm btn-light">&gt;</button>`;
+      html += '</div>';
 
-    html += '<div class="text-center mt-2">';
-    html += '<div class="row fw-bold">';
-    ['S','M','T','W','T','F','S'].forEach(d => html += `<div class="col">${d}</div>`);
-    html += '</div>';
+      html += '<div class="text-center mt-2">';
+      html += '<div class="row fw-bold">';
+      ['S','M','T','W','T','F','S'].forEach(d => html += `<div class="col">${d}</div>`);
+      html += '</div>';
 
-    let day = 1;
-    let startDay = firstDay.getDay();
-    for (let i = 0; i < 6; i++) {
-      html += '<div class="row">';
-      for (let j = 0; j < 7; j++) {
-        if (i === 0 && j < startDay) {
-          html += '<div class="col">&nbsp;</div>';
-        } else if (day > lastDay.getDate()) {
-          html += '<div class="col">&nbsp;</div>';
-        } else {
-          html += `<div class="col">${day}</div>`;
-          day++;
+      let day = 1;
+      let startDay = firstDay.getDay();
+      for (let i = 0; i < 6; i++) {
+        html += '<div class="row">';
+        for (let j = 0; j < 7; j++) {
+          if (i === 0 && j < startDay) {
+            html += '<div class="col">&nbsp;</div>';
+          } else if (day > lastDay.getDate()) {
+            html += '<div class="col">&nbsp;</div>';
+          } else {
+            const currentDateString = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+            let classes = 'calendar-day';
+            let content = day;
+            let projectsToday = scheduledEvents[currentDateString];
+
+            if (currentDateString === todayDateString) {
+              classes += ' today';
+            }
+            if (projectsToday) {
+              classes += ' scheduled';
+              const projectNames = projectsToday.map(p => p.name).join(', ');
+              const firstProjectId = projectsToday[0].id;
+              content = `<a href="main.php?page=projects/view&id=${firstProjectId}" title="${projectNames}">${day}</a>`;
+            }
+            
+            html += `<div class="col"><div class="${classes}">${content}</div></div>`;
+            day++;
+          }
         }
+        html += '</div>';
       }
       html += '</div>';
-    }
-    html += '</div>';
 
-    calendarEl.innerHTML = html;
-  }
-
-  function changeMonth(offset) {
-    currentMonth += offset;
-    if (currentMonth < 0) {
-      currentMonth = 11;
-      currentYear--;
-    } else if (currentMonth > 11) {
-      currentMonth = 0;
-      currentYear++;
+      calendarEl.innerHTML = html;
     }
+
+    function changeMonth(offset) {
+      currentMonth += offset;
+      if (currentMonth < 0) {
+        currentMonth = 11;
+        currentYear--;
+      } else if (currentMonth > 11) {
+        currentMonth = 0;
+        currentYear++;
+      }
+      renderCalendar(currentMonth, currentYear);
+    }
+
     renderCalendar(currentMonth, currentYear);
   }
-
-  renderCalendar(currentMonth, currentYear);
 
   // Real-time clock update
   function updateClock() {

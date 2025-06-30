@@ -21,7 +21,8 @@ $msg = isset($_GET['msg']) ? htmlspecialchars($_GET['msg']) : '';
         <div class="px-3 py-2 rounded mb-3" style="background-color: #d1d1d1; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);">
           <div class="d-flex justify-content-between align-items-center">
             <h6 class="mb-0"><i class="fa fa-truck me-2"></i>Supplier List</h6>
-            <a href="create.php" class="btn btn-sm btn-primary"><i class="fa fa-plus me-1"></i> Add Supplier</a>
+            <a href="main.php?page=suppliers/create" class="btn btn-sm btn-primary">
+              <i class="fa fa-plus me-1"></i> Add Supplier</a>
           </div>
         
 
@@ -55,13 +56,13 @@ $msg = isset($_GET['msg']) ? htmlspecialchars($_GET['msg']) : '';
                     <td><?= htmlspecialchars($row['address']) ?></td>
                     <td><?= date('Y-m-d H:i:s', strtotime($row['created_at'])) ?></td>
                     <td>
-                      <a href="main.php?page=view&id=<?= $row['id'] ?>" class="btn btn-xs btn-outline-info me-1" title="View">
+                      <a href="main.php?page=suppliers/view&id=<?= $row['id'] ?>" class="btn btn-xs btn-outline-info me-1" title="View">
                         <i class="bi bi-eye"></i>
                       </a>
-                      <a href="main.php?page=edit&id=<?= $row['id'] ?>" class="btn btn-xs btn-outline-warning me-1" title="Edit">
+                      <a href="main.php?page=suppliers/edit&id=<?= $row['id'] ?>" class="btn btn-xs btn-outline-warning me-1" title="Edit">
                         <i class="bi bi-pencil-square"></i>
                       </a>
-                      <a href="main.php?page=delete&id=<?= $row['id'] ?>" class="btn btn-xs btn-outline-danger" title="Delete" onclick="return confirm('Are you sure you want to delete this supplier?')">
+                      <a href="includes/suppliers/delete.php?id=<?= $row['id'] ?>" class="btn btn-xs btn-outline-danger" title="Delete" onclick="return confirm('Are you sure you want to delete this supplier?')">
                         <i class="bi bi-trash"></i>
                       </a>
                     </td>

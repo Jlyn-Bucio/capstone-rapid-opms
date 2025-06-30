@@ -59,13 +59,13 @@ $result = $conn->query($query);
                   <td><?= htmlspecialchars($row['start_date']) ?></td>
                   <td><?= htmlspecialchars($row['project_manager']) ?></td>
                   <td>
-                    <a href="main.php?page=view&id=<?= $row['id'] ?>" class="btn btn-xs btn-outline-info me-1" title="View">
+                    <a href="main.php?page=projects/view&id=<?= $row['id'] ?>" class="btn btn-xs btn-outline-info me-1" title="View">
                       <i class="bi bi-eye"></i>
                     </a>
-                    <a href="main.php?page=edit&id=<?= $row['id'] ?>" class="btn btn-xs btn-outline-warning me-1" title="Edit">
+                    <a href="main.php?page=projects/edit&id=<?= $row['id'] ?>" class="btn btn-xs btn-outline-warning me-1" title="Edit">
                       <i class="bi bi-pencil-square"></i>
                     </a>
-                    <a href="main.php?page=delete&id=<?= $row['id'] ?>" class="btn btn-xs btn-outline-danger" title="Delete" onclick="return confirm('Are you sure?')">
+                    <a href="main.php?page=projects/delete&id=<?= $row['id'] ?>" class="btn btn-xs btn-outline-danger" title="Delete" onclick="return confirm('Are you sure?')">
                       <i class="bi bi-trash"></i>
                     </a>
                   </td>

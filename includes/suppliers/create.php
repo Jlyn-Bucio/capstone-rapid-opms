@@ -12,7 +12,7 @@ error_reporting(E_ALL);
             <h5><i class="fa fa-plus me-2"></i>Add New Supplier</h5>
         </div>
         <div class="card-body">
-    <form action="store.php" method="POST">
+    <form action="includes/suppliers/save.php" method="POST">
         <div class="mb-3">
             <label for="name" class="form-label">Supplier Name <span class="text-danger">*</span></label>
             <input type="text" id="name" name="name" class="form-control" required autofocus>
@@ -31,7 +31,7 @@ error_reporting(E_ALL);
         </div>
         <div class="mb-3">
             <label for="address" class="form-label">Address</label>
-            <textarea id="address" name="address" class="form-control" rows="3"></textarea>
+            <input type="text" id="address" name="address" class="form-control">
         </div>
         <button type="submit" class="btn btn-primary">Save Supplier</button>
         <a href="index.php" class="btn btn-secondary">Cancel</a>

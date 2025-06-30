@@ -8,6 +8,8 @@ $sql = "
         b.invoice_number, 
         b.amount, 
         b.billing_date,
+        b.due_date,
+        b.status,
         p.name AS project_name,
         c.name AS customer_name
     FROM billing b
@@ -44,6 +46,7 @@ $result = $conn->query($sql);
                   <th>Customer</th>
                   <th>Amount</th>
                   <th>Billing Date</th>
+                  <th>Status</th>
                   <th>Actions</th>
                 </tr>
               </thead>
@@ -58,15 +61,33 @@ $result = $conn->query($sql);
                       <td>₱<?= number_format($row['amount'], 2) ?></td>
                       <td><?= htmlspecialchars($row['billing_date']) ?></td>
                       <td>
-                        <a href="main.php?page=view&id=<?= $row['id'] ?>" class="btn btn-xs btn-outline-info me-1" title="View">
-                          <i class="bi bi-eye"></i>
-                        </a>
-                        <a href="main.php?page=edit&id=<?= $row['id'] ?>" class="btn btn-xs btn-outline-warning me-1" title="Edit">
-                          <i class="bi bi-pencil-square"></i>
-                        </a>
-                        <a href="main.php?page=delete&id=<?= $row['id'] ?>" class="btn btn-xs btn-outline-danger" title="Delete" onclick="return confirm('Are you sure you want to delete this billing record?')">
-                          <i class="bi bi-trash"></i>
-                        </a>
+                        <?php
+                          $today = date('Y-m-d');
+                          $status = $row['status'];
+                          if ($status === 'Complete') {
+                            echo '<span class="badge bg-success">Complete</span>';
+                          } elseif ($row['due_date'] && $row['due_date'] < $today) {
+                            echo '<span class="badge bg-danger">Overdue</span>';
+                          } else {
+                            echo '<span class="badge bg-warning text-dark">Pending</span>';
+                          }
+                        ?>
+                      </td>
+                      <td>
+                        <a href="main.php?page=billing/view&id=<?= $row['id'] ?>" class="btn btn-xs btn-outline-info me-1" title="View">
+                            <i class="bi bi-eye"></i>
+                          </a>
+                          <a href="main.php?page=billing/edit&id=<?= $row['id'] ?>" class="btn btn-xs btn-outline-warning me-1" title="Edit">
+                            <i class="bi bi-pencil-square"></i>
+                          </a>
+                          <a href="includes/billing/delete.php?id=<?= $row['id'] ?>" class="btn btn-xs btn-outline-danger" title="Delete" onclick="return confirm('Are you sure you want to delete this billing record?')">
+                            <i class="bi bi-trash"></i>
+                          </a>
+                          <?php if ($row['status'] !== 'Complete'): ?>
+                            <a href="includes/billing/mark_complete.php?id=<?= $row['id'] ?>" class="btn btn-xs btn-success ms-1" title="Mark as Complete" onclick="return confirm('Mark this billing as complete?')">
+                              <i class="fa fa-check"></i> Complete
+                            </a>
+                          <?php endif; ?>
                       </td>
                     </tr>
                   <?php endwhile; ?>

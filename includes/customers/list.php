@@ -22,7 +22,7 @@ $result = $conn->query("SELECT * FROM customers ORDER BY id DESC");
         <div class="px-3 py-2 rounded mb-3" style="background-color: #d1d1d1; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);">
           <div class="d-flex justify-content-between align-items-center">
             <h6 class="mb-0"><i class="bi bi-people me-2"></i>Customer List</h6>
-            <a href="main.php?page=user/create" class="btn btn-sm btn-primary"><i class="bi bi-plus-lg me-1"></i> Add Customer</a>
+            <a href="main.php?page=customers/create" class="btn btn-sm btn-primary"><i class="bi bi-plus-lg me-1"></i> Add Customer</a>
           </div>
         
 
