@@ -1,4 +1,4 @@
-# Rapid OPMs (Operations & Project Management Suite)
+# Rapid OPMs (Online Project Management System)
 
 Rapid OPMs is a comprehensive, web-based suite designed to streamline operations and project management for construction and building companies. It provides tools for managing users, projects, billing, inventory, suppliers, and customers, all from a centralized dashboard.
 
