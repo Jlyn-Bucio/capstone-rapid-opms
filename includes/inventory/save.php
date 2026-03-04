@@ -7,6 +7,9 @@ ini_set('display_errors', 1);
 error_reporting(E_ALL);
 
 include_once __DIR__ . '/../../includes/rapid_opms.php';
+include_once __DIR__ . '/../audit_trail/audit.php';
+
+$audit = new AuditLogger($conn);
 
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
@@ -56,6 +59,9 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
     if ($stmt->execute()) {
         $_SESSION['success_inventory'] = "Product created successfully.";
+        // Log the creation in the audit trail
+        $description = "Created new Inventory: '{$name}' (ID: {$conn->insert_id})";
+        $audit->log('CREATE', 'Inventory', $description);
         header("Location: ../../main.php?page=inventory/list");
         exit;
     } else {

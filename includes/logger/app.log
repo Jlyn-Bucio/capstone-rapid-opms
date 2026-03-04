@@ -1,3 +1,4 @@
 [2026-03-04 09:44:52][INFO] [BILLING DELETE] Attempting to delete Billing with ID: 118
 [2026-03-04 09:44:52][INFO] [BILLING DELETE] Billing status: Pending, Project ID: 147
 [2026-03-04 09:44:52][INFO] [BILLING DELETE] Deleted Billing:  (ID: 118) by 'Karla'
+[2026-03-04 09:58:51][INFO] Inventory (DELETE): Product Name: Jenelen ID: 51

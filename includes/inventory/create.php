@@ -1,23 +1,16 @@
 <?php
+// audit will be processed in save.php instead of create.php to ensure it only logs successful creations!!
+
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
 include_once __DIR__ . '/../../includes/rapid_opms.php';
-include_once __DIR__ . '/../audit_trail/audit.php';
-
-$audit = new AuditLogger($conn);
 
 // --- after successfully inserting the product
 $product_id = $conn->insert_id; // ID of the newly created product
 $product_title = trim($_POST['product_title'] ?? '');
 $admin_name = $_SESSION['username'] ?? $_SESSION['user_name'] ?? 'System';
-
-// --- create audit description
-$description = "Created new Inventory: '{$product_title}' (ID: {$product_id}) by '{$admin_name}'";
-// --- log it
-$audit->log('CREATE', 'Inventory', $description);
-
 
 // Fetch suppliers
 $suppliers = $conn->query("SELECT * FROM suppliers ORDER BY name ASC");
