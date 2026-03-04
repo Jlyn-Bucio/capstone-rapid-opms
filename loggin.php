@@ -49,7 +49,8 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     }
     .container {
       display: flex;
-      width: 700px;
+      height: 400px;
+      width: 800px;
       box-shadow: 0 0 10px rgba(0,0,0,0.1);
       border-radius: 10px;
       overflow: hidden;
@@ -69,6 +70,10 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     .left h2 {
       margin-top: 20px;
     }
+    .left p {
+      margin-top: -18px;
+      font-size: 20px;
+    }
     .right {
       flex: 1;
       background: #7cd32a;
@@ -77,19 +82,24 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
       flex-direction: column;
       justify-content: center;
     }
+    .right p {
+      font-size: 26px;
+      font-weight: bold;
+      margin-bottom: 20px;
+    }
     input {
       padding: 8px;
       margin: 10px 0;
       border: none;
       border-radius: 5px;
       width: 100%;
-        box-sizing: border-box;
-        font-size: 16px;
-        
+      box-sizing: border-box;
+      font-size: 18px;
     }
     .btn {
       background: black;
       color: white;
+      font-size: 20px;
       font-weight: bold;
       cursor: pointer;
         border: none;
@@ -103,12 +113,12 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
   </style>
 <div class="container">
   <div class="left">
-    <img src="assets/pic/companylogo.png" alt="Logo">
-    <h2>Rapid ConcreteTech</h2>
+      <img src="assets/pic/logo-bgremoved.png" alt="Logo" style="cursor: pointer; height: 150px; width: 160px;"/>
+    <h1>Rapid Concretech</h1>
     <p>Builders Corporation</p>
   </div>
   <div class="right">
-    <h2>LOGIN</h2>
+    <p>LOGIN</p>
 
     <?php if ($error): ?>
       <p class="error"><?= $error ?></p>

@@ -5,10 +5,10 @@ if (!isset($_GET['id'])) {
     exit;
 }
 $id = (int)$_GET['id'];
-$stmt = $conn->prepare("UPDATE billing SET status='Complete' WHERE id = ?");
+$stmt = $conn->prepare("UPDATE billing SET status='Paid' WHERE id = ?");
 $stmt->bind_param("i", $id);
 if ($stmt->execute()) {
-    header("Location: ../../main.php?page=billing/list&success=Billing marked as complete");
+    header("Location: ../../main.php?page=billing/list&success=Billing marked as paid");
     exit;
 } else {
     header("Location: ../../main.php?page=billing/list&error=" . urlencode($stmt->error));

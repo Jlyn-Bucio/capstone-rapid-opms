@@ -37,10 +37,14 @@ if ($result) {
   <title>Admin Dashboard - Rapid Concretech</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet" />
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="assets/css/user.css">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+   <!-- Font Awesome 6 -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
   <link rel="stylesheet" href="assets/css/reports.css">
   
 </head>
@@ -51,10 +55,10 @@ if ($result) {
     --bg-body:rgb(255, 255, 255, 0.23);
     --bg-sidebar: white;
     --bg-accordion: white;
-    --bg-accordion-active: rgba(255, 255, 255, 0.23);
-    --bg-accordion-hover: rgba(255, 255, 255, 0.15);
-    --bg-card:rgba(170, 170, 170, 0.56);
-    --bg-dashboard:rgba(140, 212, 73, 0.56);
+    --bg-accordion-active: #d8d8d882; /* SIDEBAR ONLY */
+    --bg-accordion-hover: #e70f0f82;
+    --bg-card: #d8d8d882; /* VIEW USER & REPORT ONLY */
+    --bg-dashboard: #d8d8d882;
     --bg-overlay: rgba(0, 0, 0, 0.4);
     --bg-logout: rgb(180, 76, 76);
     --bg-logout-hover: rgb(4, 4, 4);
@@ -248,9 +252,10 @@ if ($result) {
   }
 
   .calendar-day {
+    display: -ms-grid;
     text-align: center;
     padding: 0.5rem 0;
-    border-radius: 50%;
+    border-radius: 10%;
     transition: background-color 0.2s;
     position: relative;
   }
@@ -271,7 +276,7 @@ if ($result) {
     text-decoration: none;
     display: block;
   }
-</style>  
+</style>
 <body >
 
 <!-- Burger button for mobile -->
@@ -374,10 +379,13 @@ if ($page) {
             }
             if (projectsToday) {
               classes += ' scheduled';
-              const projectNames = projectsToday.map(p => p.name).join(', ');
-              const firstProjectId = projectsToday[0].id;
-              content = `<a href="main.php?page=projects/view&id=${firstProjectId}" title="${projectNames}">${day}</a>`;
+              content = `
+                <a href="main.php?page=projects/view&date=${currentDateString}">
+                  ${day}
+                </a>
+              `;
             }
+
             
             html += `<div class="col"><div class="${classes}">${content}</div></div>`;
             day++;

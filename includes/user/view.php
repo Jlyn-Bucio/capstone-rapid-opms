@@ -24,52 +24,35 @@ if (!$user) {
 }
 ?>
 
-<div class="container-fluid py-4">
-    <div class="row justify-content-center">
-        <div class="col-md-8">
+<div class="container py-4">
             <div class="card">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0"><i class="fas fa-eye me-2"></i>View User Details</h5>
-                    <a href="main.php?page=user/list" class="btn btn-secondary btn-sm">
-                        <i class="fas fa-arrow-left me-1"></i> Back to List
+                <div class="d-flex justify-content-between align-items-center p-3 border-bottom">
+                    <h4 class="mb-0"><i class="fas fa-eye me-2"></i>View User Details</h4>
+                    <a href="main.php?page=user/list" class="btn btn-primary">
+                        <i class="fas fa-arrow-left me-2"></i>Back to List
                     </a>
                 </div>
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-6">
-                            <p><strong>User ID:</strong></p>
-                            <p><?= htmlspecialchars($user['id']) ?></p>
-                        </div>
-                        <div class="col-md-6">
-                            <p><strong>Date Created:</strong></p>
-                            <p><?= htmlspecialchars(date('F j, Y, g:i a', strtotime($user['created_at']))) ?></p>
-                        </div>
-                    </div>
-                    <hr>
-                    <div class="row">
-                        <div class="col-md-6">
-                            <p><strong>Name:</strong></p>
-                            <p><?= htmlspecialchars($user['name']) ?></p>
-                        </div>
-                        <div class="col-md-6">
-                            <p><strong>Email Address:</strong></p>
-                            <p><?= htmlspecialchars($user['email']) ?></p>
-                        </div>
-                    </div>
-                    <hr>
-                    <div class="row">
-                        <div class="col-md-12">
-                            <p><strong>Position:</strong></p>
-                            <p><?= htmlspecialchars($user['position']) ?></p>
-                        </div>
-                    </div>
-                </div>
-                <div class="card-footer text-end">
-                    <a href="main.php?page=user/edit&id=<?= $user['id'] ?>" class="btn btn-warning">
-                        <i class="fas fa-edit me-1"></i> Edit
-                    </a>
-                </div>
-            </div>
-        </div>
+                
+                <table class="table table-sm table-bordered mb-0">
+                    <tr>
+                        <th style="width: 250px;" class="ps-3">User ID</th><td class="ps-3"><?= htmlspecialchars($user['id']) ?></td>
+                    </tr>
+
+                    <tr>
+                        <th style="width: 250px;" class="ps-3">Date Created</th><td class="ps-3"><?= htmlspecialchars(date('F j, Y, g:i a', strtotime($user['created_at']))) ?></td>
+                    </tr>
+
+                    <tr>
+                        <th style="width: 250px;" class="ps-3">Name</th><td class="ps-3"><?= htmlspecialchars($user['name']) ?></td>
+                    </tr>
+
+                    <tr>
+                        <th style="width: 250px;" class="ps-3">Email Address</th><td class="ps-3"><?= htmlspecialchars($user['email']) ?></td>
+                    </tr>
+
+                    <tr>
+                        <th style="width: 250px;" class="ps-3">Position</th><td class="ps-3"><?= htmlspecialchars($user['position']) ?></td>
+                    </tr>
+                </table>
     </div>
 </div>

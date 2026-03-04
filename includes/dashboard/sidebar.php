@@ -1,9 +1,12 @@
 <!-- sidebar.php -->
 <div id="sidebar" class="sidebar text-black">
   <div class="sidebar-header text-center py-4">
-    <img src="assets/pic/companylogo.png" alt="Logo" class="img-fluid mb-2" style="max-height: 60px;" />
-    <h4 class="mb-0">Rapid Concretech</h4>
-    <h6>Builders Corporation</h6>
+    <a class="nav-link text-black px-3" href="main.php">
+      <img src="assets/pic/logo-bgremoved.png" alt="Logo" style="cursor: pointer; height: 90px; width: 100px;"/>
+    </a>
+<h4 style="margin-top: 10px;">Rapid Concretech</h4>
+<h5 style="margin-top: -9px;">Builders Corporation</h5>
+
   </div>
   <hr class="my-0" style="border-color: #000;">
 
@@ -16,17 +19,18 @@
     <div class="accordion-item border-0">
       <h2 class="accordion-header">
         <button class="accordion-button collapsed text-black" type="button" data-bs-toggle="collapse" data-bs-target="#collapseUsers">
-          <i class="fas fa-users"></i><span class="d-none d-sm-inline ms-2">User Management</span>
+          <i class="fas fa-users"></i><span class="d-none d-sm-inline ms-2">Users </span>
         </button>
       </h2>
       <div id="collapseUsers" class="accordion-collapse collapse" data-bs-parent="#sidebarMenu">
         <div class="accordion-body ps-4">
-          <a href="main.php?page=user/list" class="nav-link text-black">
-            <i class="fas fa-user-cog"></i><span class="d-none d-sm-inline ms-2">Manage Users</span>
-          </a>
-          <a href="main.php?page=user/create" class="nav-link text-black">
+           <a href="main.php?page=user/create" class="nav-link text-black">
             <i class="fa fa-user-plus"></i><span class="d-none d-sm-inline ms-2">Add User</span>
           </a>
+          <a href="main.php?page=user/list" class="nav-link text-black">
+            <i class="fas fa-user-cog"></i><span class="d-none d-sm-inline ms-2">User Management</span>
+          </a>
+         
         </div>
       </div>
     </div>
@@ -35,7 +39,7 @@
     <div class="accordion-item border-0">
       <h2 class="accordion-header">
         <button class="accordion-button collapsed text-black" type="button" data-bs-toggle="collapse" data-bs-target="#collapseProjects">
-          <i class="fas fa-project-diagram me-2"></i><span class="d-none d-sm-inline">Project Management</span>
+          <i class="fas fa-project-diagram me-2"></i><span class="d-none d-sm-inline">Projects</span>
         </button>
       </h2>
       <div id="collapseProjects" class="accordion-collapse collapse" data-bs-parent="#sidebarMenu">
@@ -63,12 +67,53 @@
             <i class="fas fa-plus-circle"></i><span class="d-none d-sm-inline ms-2">Add Billing</span>
           </a>
           <a href="main.php?page=billing/list" class="nav-link text-black">
-            <i class="fas fa-edit"></i><span class="d-none d-sm-inline ms-2">Manage Billing</span>
+            <i class="fas fa-edit"></i><span class="d-none d-sm-inline ms-2">Billing Management</span>
           </a>
         </div>
       </div>
     </div>
-
+        <!-- Customers -->
+    <div class="accordion-item border-0">
+      <h2 class="accordion-header">
+        <button class="accordion-button collapsed text-black" type="button" data-bs-toggle="collapse" data-bs-target="#collapseCustomers">
+          <i class="fas fa-user-friends me-2"></i><span class="d-none d-sm-inline">Customers</span>
+        </button>
+      </h2>
+      <div id="collapseCustomers" class="accordion-collapse collapse" data-bs-parent="#sidebarMenu">
+        <div class="accordion-body ps-4">
+          <a href="main.php?page=customers/create" class="nav-link text-black">
+            <i class="fas fa-user-plus"></i><span class="d-none d-sm-inline ms-2">Add Customer</span>
+          </a>
+          <a href="main.php?page=customers/list" class="nav-link text-black">
+            <i class="fas fa-user-cog"></i><span class="d-none d-sm-inline ms-2">Customer Management</span>
+          </a>
+        </div>
+      </div>
+    </div>
+    <!-- Price List -->
+    <div class="accordion-item border-0">
+      <h2 class="accordion-header">
+        <button class="accordion-button collapsed text-black" type="button" data-bs-toggle="collapse" data-bs-target="#collapsePriceList">
+          <i class="fas fa-tag me-2"></i><span class="d-none d-sm-inline">Pricelist</span>
+        </button>
+      </h2>
+      <div id="collapsePriceList" class="accordion-collapse collapse" data-bs-parent="#sidebarMenu">
+        <div class="accordion-body ps-4">
+          <a href="main.php?page=pricelist/create" class="nav-link text-black">
+            <i class="fas fa-plus-circle"></i><span class="d-none d-sm-inline ms-2">Add Price</span>
+          </a>
+          <a href="main.php?page=pricelist/list" class="nav-link text-black">
+            <i class="fa fa-tags"></i><span class="d-none d-sm-inline ms-2">Contractor Management</span>
+          </a>
+          <a href="main.php?page=manpower/createmanpower" class="nav-link text-black">
+            <i class="fas fa-user-plus"></i><span class="d-none d-sm-inline ms-2">Create Manpower</span>
+          </a>
+          <a href="main.php?page=manpower/listmanpower" class="nav-link text-black">
+            <i class="fas fa-user-cog"></i><span class="d-none d-sm-inline ms-2">Manpower Management</span>
+          </a>
+        </div>
+      </div>
+    </div>
     <!-- Inventory -->
     <div class="accordion-item border-0">
       <h2 class="accordion-header">
@@ -82,13 +127,12 @@
             <i class="fas fa-plus-square"></i><span class="d-none d-sm-inline ms-2">Add Product</span>
           </a>
           <a href="main.php?page=inventory/list" class="nav-link text-black">
-            <i class="fas fa-warehouse"></i><span class="d-none d-sm-inline ms-2">Manage Inventory</span>
+            <i class="fas fa-warehouse"></i><span class="d-none d-sm-inline ms-2">Inventory Management</span>
           </a>
         </div>
       </div>
     </div>
-
-    <!-- Suppliers -->
+        <!-- Suppliers -->
     <div class="accordion-item border-0">
       <h2 class="accordion-header">
         <button class="accordion-button collapsed text-black" type="button" data-bs-toggle="collapse" data-bs-target="#collapseSuppliers">
@@ -98,33 +142,28 @@
       <div id="collapseSuppliers" class="accordion-collapse collapse" data-bs-parent="#sidebarMenu">
         <div class="accordion-body ps-4">
           <a href="main.php?page=suppliers/create" class="nav-link text-black">
-            <i class="fas fa-user-plus"></i><span class="d-none d-sm-inline ms-2">Add Supplier</span>
+            <i class="fa-solid fa-boxes-packing"></i><span class="d-none d-sm-inline ms-2">Add Supplier</span>
           </a>
           <a href="main.php?page=suppliers/list" class="nav-link text-black">
-            <i class="fas fa-cogs"></i><span class="d-none d-sm-inline ms-2">Manage Suppliers</span>
+            <i class="fas fa-cogs"></i><span class="d-none d-sm-inline ms-2">Suppliers Management</span>
           </a>
         </div>
       </div>
     </div>
 
-    <!-- Customers -->
     <div class="accordion-item border-0">
-      <h2 class="accordion-header">
-        <button class="accordion-button collapsed text-black" type="button" data-bs-toggle="collapse" data-bs-target="#collapseCustomers">
-          <i class="fas fa-user-friends me-2"></i><span class="d-none d-sm-inline">Customers</span>
-        </button>
-      </h2>
-      <div id="collapseCustomers" class="accordion-collapse collapse" data-bs-parent="#sidebarMenu">
-        <div class="accordion-body ps-4">
-          <a href="main.php?page=customers/create" class="nav-link text-black">
-            <i class="fas fa-user-plus"></i><span class="d-none d-sm-inline ms-2">Add Customer</span>
-          </a>
-          <a href="main.php?page=customers/list" class="nav-link text-black">
-            <i class="fas fa-user-cog"></i><span class="d-none d-sm-inline ms-2">Manage Customer</span>
-          </a>
-        </div>
-      </div>
-    </div>
+  <h2 class="accordion-header">
+    <a href="main.php?page=audit_trail/list"
+       class="accordion-button text-black collapsed text-decoration-none">
+      <i class="fas fa-shield-alt me-2"></i>
+      <span class="d-none d-sm-inline">Audit Trail</span>
+    </a>
+  </h2>
+</div>
+
+
+
+
 
     <!-- Reports -->
     <div class="accordion-item border-0">
@@ -148,14 +187,8 @@
       </div>
     </div>
 
-    <!-- Version -->
-    <?php include_once __DIR__ . '/../version.php'; ?>
-    <div class="text-center mt-4 px-3 text-muted small">
-      <span>Version: <?= APP_VERSION ?></span>
-    </div>
-
     <!-- Logout -->
-    <div class="text-center mt-2 px-3">
+    <div class="text-center mt-4 px-5">
       <form action="logout.php" method="post">
         <button type="submit" class="btn btn-danger w-100">
           <i class="fas fa-sign-out-alt"></i><span class="d-none d-sm-inline ms-2">Logout</span>
@@ -164,3 +197,4 @@
     </div>
   </div>
 </div>
+

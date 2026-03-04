@@ -1,338 +1,339 @@
 <?php
-// includes/reports/year.php
 include_once __DIR__ . '/../../includes/rapid_opms.php';
+date_default_timezone_set('Asia/Manila');
 
-// Get the start and end dates of the current year
-$current_year = date('Y');
-$start_of_year = date('Y-m-d', strtotime("first day of january $current_year"));
-$end_of_year = date('Y-m-d', strtotime("last day of december $current_year"));
+/* =========================
+   Year range
+========================= */
 
-// Initialize the formatter for currency
-$fmt = new NumberFormatter('en_PH', NumberFormatter::CURRENCY);
+$selected_year = isset($_GET['year']) ? (int)$_GET['year'] : date('Y');
 
-// Helper function to execute a count query for a date range
-function get_count_for_range($conn, $table, $start_date, $end_date) {
-    $sql = "SELECT COUNT(*) as count FROM `{$table}` WHERE DATE(created_at) BETWEEN ? AND ?";
-    $stmt = $conn->prepare($sql);
-    $stmt->bind_param("ss", $start_date, $end_date);
-    $stmt->execute();
-    $result = $stmt->get_result()->fetch_assoc();
-    $stmt->close();
-    return $result['count'] ?? 0;
-}
-
-// Helper function to get sum for a date range
-function get_sum_for_range($conn, $table, $amount_field, $date_field, $start_date, $end_date) {
-    $sql = "SELECT SUM($amount_field) as total FROM `{$table}` WHERE DATE($date_field) BETWEEN ? AND ?";
-    $stmt = $conn->prepare($sql);
-    $stmt->bind_param("ss", $start_date, $end_date);
-    $stmt->execute();
-    $result = $stmt->get_result()->fetch_assoc();
-    $stmt->close();
-    return $result['total'] ?? 0;
-}
-
-// Fetch counts for the current year
-$new_customers = get_count_for_range($conn, 'customers', $start_of_year, $end_of_year);
-$new_projects = get_count_for_range($conn, 'projects', $start_of_year, $end_of_year);
-$new_billings = get_count_for_range($conn, 'billing', $start_of_year, $end_of_year);
-$new_inventory = get_count_for_range($conn, 'inventory', $start_of_year, $end_of_year);
-
-// Get yearly income from transactions
-$yearly_income = get_sum_for_range($conn, 'transactions', 'amount', 'transaction_date', $start_of_year, $end_of_year);
-
-// Get yearly billing amount
-$yearly_billing = get_sum_for_range($conn, 'billing', 'amount', 'billing_date', $start_of_year, $end_of_year);
-
-// Get monthly statistics for the chart
-$monthly_stats_query = $conn->prepare("
-    SELECT 
-        DATE_FORMAT(transaction_date, '%Y-%m') as month,
-        SUM(amount) as total
-    FROM transactions 
-    WHERE DATE(transaction_date) BETWEEN ? AND ?
-    GROUP BY DATE_FORMAT(transaction_date, '%Y-%m')
-    ORDER BY month ASC
+/* Query available years from database */
+$available_years = [];
+$stmt = $conn->query("
+    SELECT DISTINCT YEAR(billing_date) as y FROM billing WHERE deleted_at IS NULL AND billing_date IS NOT NULL
+    UNION
+    SELECT DISTINCT YEAR(start_date) as y FROM projects WHERE deleted_at IS NULL AND start_date IS NOT NULL
+    ORDER BY y ASC
 ");
-
-$monthly_stats_query->bind_param("ss", $start_of_year, $end_of_year);
-$monthly_stats_query->execute();
-$monthly_stats_result = $monthly_stats_query->get_result();
-
-$months = [];
-$totals = [];
-$monthly_stats = [];
-
-while ($row = $monthly_stats_result->fetch_assoc()) {
-    $monthly_stats[] = $row;
-    $months[] = date('M Y', strtotime($row['month'] . '-01'));
-    $totals[] = (float)$row['total'];
+if ($stmt) {
+    while ($row = $stmt->fetch_assoc()) {
+        if ($row['y']) $available_years[] = (int)$row['y'];
+    }
 }
-$monthly_stats_query->close();
+$available_years = array_unique($available_years);
+sort($available_years);
 
-// Get top projects for the year
-$projects_query = $conn->prepare("
-    SELECT 
-        p.*, 
-        c.name as customer_name,
-        (SELECT SUM(amount) FROM billing WHERE project_id = p.id) as total_billing
-    FROM projects p 
-    JOIN customers c ON p.customer_id = c.id 
-    WHERE DATE(p.created_at) BETWEEN ? AND ?
-    ORDER BY total_billing DESC
-    LIMIT 5
-");
-
-$projects_query->bind_param("ss", $start_of_year, $end_of_year);
-$projects_query->execute();
-$top_projects = $projects_query->get_result()->fetch_all(MYSQLI_ASSOC);
-$projects_query->close();
-
-// Get monthly project counts for the secondary chart
-$project_counts_query = $conn->prepare("
-    SELECT 
-        DATE_FORMAT(created_at, '%Y-%m') as month,
-        COUNT(*) as count
-    FROM projects 
-    WHERE DATE(created_at) BETWEEN ? AND ?
-    GROUP BY DATE_FORMAT(created_at, '%Y-%m')
-    ORDER BY month ASC
-");
-
-$project_counts_query->bind_param("ss", $start_of_year, $end_of_year);
-$project_counts_query->execute();
-$project_counts_result = $project_counts_query->get_result();
-
-$project_months = [];
-$project_counts = [];
-
-while ($row = $project_counts_result->fetch_assoc()) {
-    $project_months[] = date('M Y', strtotime($row['month'] . '-01'));
-    $project_counts[] = (int)$row['count'];
+/* If no years found, show current year */
+if (empty($available_years)) {
+    $available_years = [(int)date('Y')];
 }
-$project_counts_query->close();
+
+/* Prefer current year if it has data; otherwise use selected if available or first available */
+$current_year = (int)date('Y');
+if (!in_array($selected_year, $available_years)) {
+    $selected_year = in_array($current_year, $available_years) ? $current_year : ($available_years[0] ?? $current_year);
+}
+
+$start_dt = "$selected_year-01-01 00:00:00";
+$end_dt   = "$selected_year-12-31 23:59:59";
+
+/* =========================
+   BILLING DATA (non-deleted)
+========================= */
+$stmt = $conn->prepare("
+    SELECT b.amount, b.status, b.billing_date,
+           p.name AS project_name,
+           c.name AS customer_name,
+           b.project_id
+    FROM billing b
+    LEFT JOIN projects p ON b.project_id = p.id
+    LEFT JOIN customers c ON b.customer_id = c.id
+    WHERE b.deleted_at IS NULL
+      AND b.billing_date BETWEEN ? AND ?
+");
+$stmt->bind_param("ss", $start_dt, $end_dt);
+$stmt->execute();
+$billing_list = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+$stmt->close();
+
+/* =========================
+   Initialize arrays
+========================= */
+$chart_data = array_fill(0, 12, 0);      // Monthly Revenue
+$project_totals = [];                    // Top Projects
+$yearly_income = 0;                      // Paid only
+$yearly_billing = 0;                     // All non-deleted billings
+
+/* =========================
+   Process billing
+========================= */
+foreach ($billing_list as $b) {
+    $amount = (float)($b['amount'] ?? 0);
+    $status = strtolower($b['status'] ?? '');
+
+    // Add to yearly billing (all non-deleted statuses)
+    $yearly_billing += $amount;
+
+    // Add to yearly income if Paid
+    if ($status === 'paid') {
+        $yearly_income += $amount;
+    }
+
+    // Add to monthly revenue
+    $month_index = (int)date('n', strtotime($b['billing_date'])) - 1;
+    $chart_data[$month_index] += $amount;
+
+    // Track top projects
+    $pid = $b['project_id'] ?? 0;
+    if (!isset($project_totals[$pid])) {
+        $project_totals[$pid] = [
+            'name' => $b['project_name'] ?? 'Unnamed Project',
+            'customer_name' => $b['customer_name'] ?? 'Unknown Customer',
+            'total_billing' => 0
+        ];
+    }
+    $project_totals[$pid]['total_billing'] += $amount;
+}
+
+/* =========================
+   Top 5 projects
+========================= */
+usort($project_totals, fn($a,$b) => $b['total_billing'] <=> $a['total_billing']);
+$top_projects = array_slice($project_totals, 0, 10);
+
+/* =========================
+   MONTHLY PROJECTS (Project List - based on start_date)
+========================= */
+$monthlyProjects = array_fill(0, 12, 0);
+
+$stmt = $conn->prepare("
+    SELECT start_date
+    FROM projects
+    WHERE deleted_at IS NULL
+      AND start_date BETWEEN ? AND ?
+");
+$stmt->bind_param("ss", $start_dt, $end_dt);
+$stmt->execute();
+$result = $stmt->get_result();
+
+while ($row = $result->fetch_assoc()) {
+    if (empty($row['start_date'])) continue;
+
+    $month_index = (int)date('n', strtotime($row['start_date'])) - 1;
+$monthlyProjects[$month_index]++;
+
+}
+
+$stmt->close();
+
+
+/* =========================
+   New Projects (created_at - yearly total)
+========================= */
+$stmt = $conn->prepare("
+    SELECT COUNT(*) AS total
+    FROM projects
+    WHERE deleted_at IS NULL
+      AND created_at BETWEEN ? AND ?
+");
+$stmt->bind_param("ss", $start_dt, $end_dt);
+$stmt->execute();
+$row = $stmt->get_result()->fetch_assoc();
+$stmt->close();
+$new_projects = (int)($row['total'] ?? 0);
+
+/* =========================
+   New Customers (yearly total)
+========================= */
+$stmt = $conn->prepare("
+    SELECT COUNT(*) AS total
+    FROM customers
+    WHERE deleted_at IS NULL
+      AND created_at BETWEEN ? AND ?
+");
+$stmt->bind_param("ss", $start_dt, $end_dt);
+$stmt->execute();
+$row = $stmt->get_result()->fetch_assoc();
+$stmt->close();
+$new_customers = (int)($row['total'] ?? 0);
+
+
+/* =========================
+   Chart labels
+========================= */
+$chart_labels = [];
+for ($m = 1; $m <= 12; $m++) {
+    $chart_labels[] = date('M', mktime(0,0,0,$m,1));
+}
+$current_month = date('M');
+
+/* =========================
+   Currency formatter
+========================= */
+if (class_exists('NumberFormatter')) {
+    $fmt = new NumberFormatter('en_PH', NumberFormatter::CURRENCY);
+} else {
+    $fmt = new class {
+        public function formatCurrency($amount) {
+            return '₱' . number_format((float)$amount, 2);
+        }
+    };
+}
 ?>
-
 <div class="container-fluid py-4">
-    <div class="card">
-        <div class="card-header">
-            <h5 class="mb-0">Yearly Report - <?= $current_year ?></h5>
-        </div>
+    <div class="card mb-4">
         <div class="card-body">
-            <!-- Summary Cards -->
-            <div class="row mb-4">
-                <div class="col-xl-3 col-md-6 mb-4">
-                    <div class="card border-left-primary shadow h-100 py-2">
-                        <div class="card-body">
-                            <div class="row no-gutters align-items-center">
-                                <div class="col mr-2">
-                                    <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
-                                        Yearly Income</div>
-                                    <div class="h5 mb-0 font-weight-bold text-gray-800">
-                                        <?= $fmt->formatCurrency($yearly_income, 'PHP') ?>
-                                    </div>
-                                </div>
-                                <div class="col-auto">
-                                    <i class="fas fa-calendar fa-2x text-gray-300"></i>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+            <?php
+            $current_year = (int)date('Y');
+            $year_selected = $selected_year;
+            ?>
 
-                <div class="col-xl-3 col-md-6 mb-4">
-                    <div class="card border-left-success shadow h-100 py-2">
-                        <div class="card-body">
-                            <div class="row no-gutters align-items-center">
-                                <div class="col mr-2">
-                                    <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
-                                        Total Projects</div>
-                                    <div class="h5 mb-0 font-weight-bold text-gray-800"><?= $new_projects ?></div>
-                                </div>
-                                <div class="col-auto">
-                                    <i class="fas fa-briefcase fa-2x text-gray-300"></i>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+            <form method="get" class="d-flex justify-content-between align-items-start">
+                <input type="hidden" name="page" value="<?= htmlspecialchars($_GET['page'] ?? 'reports/year') ?>">
 
-                <div class="col-xl-3 col-md-6 mb-4">
-                    <div class="card border-left-info shadow h-100 py-2">
-                        <div class="card-body">
-                            <div class="row no-gutters align-items-center">
-                                <div class="col mr-2">
-                                    <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
-                                        Total Customers</div>
-                                    <div class="h5 mb-0 font-weight-bold text-gray-800"><?= $new_customers ?></div>
-                                </div>
-                                <div class="col-auto">
-                                    <i class="fas fa-users fa-2x text-gray-300"></i>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                <h4 class="mb-3 fw-bold mb-0">Yearly Report — <?= $selected_year ?></h4>
 
-                <div class="col-xl-3 col-md-6 mb-4">
-                    <div class="card border-left-warning shadow h-100 py-2">
-                        <div class="card-body">
-                            <div class="row no-gutters align-items-center">
-                                <div class="col mr-2">
-                                    <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
-                                        Yearly Billing</div>
-                                    <div class="h5 mb-0 font-weight-bold text-gray-800">
-                                        <?= $fmt->formatCurrency($yearly_billing, 'PHP') ?>
-                                    </div>
-                                </div>
-                                <div class="col-auto">
-                                    <i class="fas fa-file-invoice-dollar fa-2x text-gray-300"></i>
-                                </div>
-                            </div>
-                        </div>
+                    <div class="ms-3">
+                        <select name="year" class="form-select form-select-sm d-inline w-auto" onchange="this.form.submit()">
+                            <?php foreach ($available_years as $y): ?>
+                                <option value="<?= $y ?>" <?= $y == $year_selected ? 'selected' : '' ?>><?= $y ?><?= $y === $current_year ? ' (this year)' : '' ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                        <!-- auto-submit on change; no button -->
                     </div>
+            </form>
+        </div>
+        <div class="row mb-0">
+            <div class="col-md-3">
+                <div class="card p-3 text-white" style="background:#6f42c1;">
+                    <strong>Yearly Income (PAID)</strong>
+                    <h5><?= $fmt->formatCurrency($yearly_income) ?></h5>
                 </div>
             </div>
-
-            <!-- Charts Row -->
-            <div class="row">
-                <div class="col-xl-8 col-lg-7">
-                    <div class="card shadow mb-4">
-                        <div class="card-header py-3">
-                            <h6 class="m-0 font-weight-bold text-primary">Monthly Revenue Overview</h6>
-                        </div>
-                        <div class="card-body">
-                            <canvas id="monthlyRevenueChart"></canvas>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="col-xl-4 col-lg-5">
-                    <div class="card shadow mb-4">
-                        <div class="card-header py-3">
-                            <h6 class="m-0 font-weight-bold text-primary">Top Projects by Revenue</h6>
-                        </div>
-                        <div class="card-body">
-                            <div class="table-responsive">
-                                <table class="table table-sm">
-                                    <thead>
-                                        <tr>
-                                            <th>Project</th>
-                                            <th>Customer</th>
-                                            <th>Revenue</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <?php foreach ($top_projects as $project): ?>
-                                        <tr>
-                                            <td><?= htmlspecialchars($project['name']) ?></td>
-                                            <td><?= htmlspecialchars($project['customer_name']) ?></td>
-                                            <td><?= $fmt->formatCurrency($project['total_billing'], 'PHP') ?></td>
-                                        </tr>
-                                        <?php endforeach; ?>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
+            <div class="col-md-3">
+                <div class="card p-3 text-white" style="background:#20c997;">
+                    <strong>New Projects</strong>
+                    <h5><?= $new_projects ?></h5>
                 </div>
             </div>
-
-            <!-- Project Trends -->
-            <div class="row">
-                <div class="col-12">
-                    <div class="card shadow mb-4">
-                        <div class="card-header py-3">
-                            <h6 class="m-0 font-weight-bold text-primary">Monthly Project Trends</h6>
-                        </div>
-                        <div class="card-body">
-                            <canvas id="projectTrendsChart"></canvas>
-                        </div>
-                    </div>
+            <div class="col-md-3">
+                <div class="card p-3 text-white" style="background:#0dcaf0;">
+                    <strong>New Customers</strong>
+                    <h5><?= $new_customers ?></h5>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card p-3 text-white" style="background:#fd7e14;">
+                    <strong>Yearly Billing (All)</strong>
+                    <h5><?= $fmt->formatCurrency($yearly_billing) ?></h5>
                 </div>
             </div>
         </div>
     </div>
+
+    <div class="row mb-4 g-3">
+        <!-- Monthly Revenue -->
+        <div class="col-lg-8">
+            <div class="card h-100">
+                <h4 class="fw-bold">Monthly Revenue</h4>
+                <div class="card-body">
+                    <canvas id="yearRevenueChart" height="120"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Monthly Projects -->
+        <div class="col-lg-4">
+            <div class="card h-100">
+                <h4 class="fw-bold">Monthly Projects</h4>
+                <div class="card-body d-flex align-items-center justify-content-center">
+                    <canvas id="projectChart" height="260"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+   
+    <div class="card">
+        <h4 class="fw-bold">Top Projects</h4>
+        <div class="card-body table-responsive">
+            <table class="table table-sm">
+                <thead><tr><th>NO.</th><th>Project</th><th>Customer</th><th>Revenue</th></tr></thead>
+                <tbody>
+                    <?php $counter = 1; foreach ($top_projects as $p): ?>
+                        <tr>
+                            <td><?= $counter++ ?></td>
+                            <td><?= htmlspecialchars($p['name']) ?></td>
+                            <td><?= htmlspecialchars($p['customer_name']) ?></td>
+                            <td><?= $fmt->formatCurrency($p['total_billing']) ?></td>
+                        </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
+    </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0"></script>
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Monthly Revenue Chart
-    const revenueCtx = document.getElementById('monthlyRevenueChart').getContext('2d');
-    new Chart(revenueCtx, {
+document.addEventListener('DOMContentLoaded', () => {
+    const labels = <?= json_encode($chart_labels) ?>;
+    const revenueData = <?= json_encode($chart_data) ?>;   // Monthly Revenue (non-deleted)
+    const projectsData = <?= json_encode($monthlyProjects) ?>; // Monthly Projects from Project List
+    const currentMonth = "<?= $current_month ?>";
+
+    const barColors = labels.map(m =>
+        m === currentMonth ? 'rgba(220,53,69,0.8)' : 'rgba(13,110,253,0.6)'
+    );
+
+    // MONTHLY REVENUE (BAR)
+    new Chart(document.getElementById('yearRevenueChart'), {
         type: 'bar',
         data: {
-            labels: <?= json_encode($months) ?>,
+            labels,
             datasets: [{
-                label: 'Monthly Revenue',
-                data: <?= json_encode($totals) ?>,
-                backgroundColor: 'rgba(78, 115, 223, 0.5)',
-                borderColor: 'rgba(78, 115, 223, 1)',
+                label: 'Revenue',
+                data: revenueData,
+                backgroundColor: barColors,
                 borderWidth: 1
             }]
         },
         options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    ticks: {
-                        callback: function(value) {
-                            return '₱' + value.toLocaleString();
-                        }
-                    }
-                }
-            },
-            plugins: {
-                legend: {
-                    position: 'top',
-                },
-                title: {
-                    display: true,
-                    text: 'Monthly Revenue for <?= $current_year ?>'
-                }
-            }
+            plugins: { legend: { display: false } },
+            scales: { y: { beginAtZero: true } }
         }
     });
 
-    // Project Trends Chart
-    const trendsCtx = document.getElementById('projectTrendsChart').getContext('2d');
-    new Chart(trendsCtx, {
-        type: 'line',
-        data: {
-            labels: <?= json_encode($project_months) ?>,
-            datasets: [{
-                label: 'Number of Projects',
-                data: <?= json_encode($project_counts) ?>,
-                fill: false,
-                borderColor: 'rgb(75, 192, 192)',
-                tension: 0.1
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    ticks: {
-                        stepSize: 1
-                    }
-                }
-            },
-            plugins: {
-                legend: {
-                    position: 'top',
-                },
-                title: {
-                    display: true,
-                    text: 'Monthly Project Count for <?= $current_year ?>'
+
+// MONTHLY PROJECTS (LINE)
+new Chart(document.getElementById('projectChart'), {
+    type: 'line',
+    data: {
+        labels,
+        datasets: [{
+            label: 'Projects',
+            data: projectsData,
+            borderColor: 'rgba(0,123,255,0.8)',
+            backgroundColor: 'rgba(0,123,255,0.2)',
+            borderWidth: 2,
+            tension: 0.3,
+            fill: true
+        }]
+    },
+    options: {
+        plugins: { legend: { display: false } },
+        scales: { 
+            y: { 
+                beginAtZero: true,
+                ticks: {
+                    stepSize: 1,           // <- integer steps
+                    callback: function(v) { return Math.round(v); } // <- remove decimals
                 }
             }
         }
-    });
+    }
+});
+
 });
 </script>
-

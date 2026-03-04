@@ -2,141 +2,552 @@
 ini_set('display_errors', 1);
 error_reporting(E_ALL);
 
-include_once __DIR__ . '/../../includes/rapid_opms.php';
 
-// Check if an ID is provided
-if (!isset($_GET['id'])) {
-    echo "<div class='alert alert-danger'>No project ID provided.</div>";
-    exit;
+include_once __DIR__ . '/../../includes/rapid_opms.php';
+include_once __DIR__ . '/../audit_trail/audit.php';
+
+$audit = new AuditLogger($conn);
+
+/* ---------- HELPERS ---------- */
+function inputValue($value) {
+    if ($value === null) return '';
+    if (trim($value) === '') return '';
+    if ($value == 0) return '';
+    return htmlspecialchars($value);
+}
+function num($key) {
+    $val = $_POST[$key] ?? '';
+    return $val === '' ? 0 : floatval(str_replace(',', '', $val));
 }
 
-$project_id = (int)$_GET['id'];
+/* ---------- GET PROJECT ---------- */
+if (!isset($_GET['id'])) die("No project ID");
+$id = (int)$_GET['id'];
 
-// Fetch project details
-$stmt = $conn->prepare("SELECT * FROM projects WHERE id = ?");
-$stmt->bind_param("i", $project_id);
+$stmt = $conn->prepare("SELECT * FROM projects WHERE id=?");
+$stmt->bind_param("i", $id);
 $stmt->execute();
-$result = $stmt->get_result();
-$project = $result->fetch_assoc();
+$project = $stmt->get_result()->fetch_assoc();
 $stmt->close();
 
-if (!$project) {
-    echo "<div class='alert alert-danger'>Project not found.</div>";
-    exit;
-}
+if (!$project) die("Project not found");
 
-// Fetch customers for dropdown
-$customers = [];
-$customerResult = $conn->query("SELECT id, name, company_name FROM customers ORDER BY name ASC");
-while ($row = $customerResult->fetch_assoc()) {
-    $customers[] = $row;
-}
+/* ---------- CUSTOMERS ---------- */
+$customers = $conn->query("SELECT id, name, company_name FROM customers ORDER BY name ASC");
 
-// Handle form submission
+/* ---------- SAVE ---------- */
 $errors = [];
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $name = trim($_POST['name']);
-    $date = trim($_POST['date']);
-    $location = trim($_POST['location']);
-    $contractor = trim($_POST['contractor']);
-    $size = trim($_POST['size']);
-    $start_date = trim($_POST['start_date']);
+
+    $name = $_POST['name'];
+    $date = $_POST['date'];
+    $start_date = $_POST['start_date'];
+    $status = $_POST['status'];        // ⭐ IMPORTANT
+    $location = $_POST['location'];
+    $contractor = $_POST['contractor'] ?? '';
+    $size = $_POST['size'];
     $customer_id = (int)$_POST['customer_id'];
-    $project_manager = trim($_POST['project_manager']);
-    $description = trim($_POST['description']);
+    $project_manager = $_POST['project_manager'] ?? '';
+    $description = $_POST['description'];
 
-    // Basic validation
-    if (empty($name)) $errors['name'] = "Project name is required.";
-    if (empty($date)) $errors['date'] = "Date is required.";
-    if (empty($location)) $errors['location'] = "Location is required.";
-    if ($customer_id === 0) $errors['customer_id'] = "Please select a valid customer.";
+    if (!$name) $errors[] = "Project name required";
+    if (!$status) $errors[] = "Status required";
 
-    // If no errors, update the DB
-    if (empty($errors)) {
-        $stmt = $conn->prepare("UPDATE projects SET name = ?, date = ?, location = ?, contractor = ?, size = ?, start_date = ?, customer_id = ?, project_manager = ?, description = ? WHERE id = ?");
-        $stmt->bind_param("ssssssissi", $name, $date, $location, $contractor, $size, $start_date, $customer_id, $project_manager, $description, $project_id);
+    if (!$errors) {
+        $stmt = $conn->prepare("
+        UPDATE projects SET
+            name=?, date=?, start_date=?, status=?, location=?, contractor=?, size=?,
+            customer_id=?, project_manager=?, description=?,
 
-        if ($stmt->execute()) {
-            $_SESSION['success'] = "Project successfully updated!";
-            header("Location: main.php?page=projects/list");
-            exit;
-        } else {
-            $errors['db'] = "Database error: " . $stmt->error;
+            straight_finish_area=?, straight_finish_unit_cost=?, straight_finish_amount=?,
+            rough_finish_area=?, rough_finish_unit_cost=?, rough_finish_amount=?,
+            suspended_volume_area=?, suspended_volume_unit_cost=?, suspended_volume_amount=?,
+            mobilization_fee_area=?, mobilization_fee_unit_cost=?, mobilization_fee_amount=?,
+            idle_time_area=?, idle_time_unit_cost=?, idle_time_amount=?,
+            cancellation_fee_area=?, cancellation_fee_unit_cost=?, cancellation_fee_amount=?,
+            total_amount=?
+        WHERE id=?
+        ");
+
+        $straight_finish_area = num('straight_finish_area');
+        $straight_finish_unit_cost = num('straight_finish_unit_cost');
+        $straight_finish_amount = num('straight_finish_amount');
+
+        $rough_finish_area = num('rough_finish_area');
+        $rough_finish_unit_cost = num('rough_finish_unit_cost');
+        $rough_finish_amount = num('rough_finish_amount');
+
+        $suspended_volume_area = num('suspended_volume_area');
+        $suspended_volume_unit_cost = num('suspended_volume_unit_cost');
+        $suspended_volume_amount = num('suspended_volume_amount');
+
+        $mobilization_fee_area = num('mobilization_fee_area');
+        $mobilization_fee_unit_cost = num('mobilization_fee_unit_cost');
+        $mobilization_fee_amount = num('mobilization_fee_amount');
+
+        $idle_time_area = num('idle_time_area');
+        $idle_time_unit_cost = num('idle_time_unit_cost');
+        $idle_time_amount = num('idle_time_amount');
+
+        $cancellation_fee_area = num('cancellation_fee_area');
+        $cancellation_fee_unit_cost = num('cancellation_fee_unit_cost');
+        $cancellation_fee_amount = num('cancellation_fee_amount');
+
+        $total_amount = num('total_amount');
+
+        $stmt->bind_param(
+            "ssssssisss".str_repeat("d",19)."i",
+            $name,$date,$start_date,$status,$location,$contractor,$size,
+            $customer_id,$project_manager,$description,
+
+            $straight_finish_area,$straight_finish_unit_cost,$straight_finish_amount,
+            $rough_finish_area,$rough_finish_unit_cost,$rough_finish_amount,
+            $suspended_volume_area,$suspended_volume_unit_cost,$suspended_volume_amount,
+            $mobilization_fee_area,$mobilization_fee_unit_cost,$mobilization_fee_amount,
+            $idle_time_area,$idle_time_unit_cost,$idle_time_amount,
+            $cancellation_fee_area,$cancellation_fee_unit_cost,$cancellation_fee_amount,
+            $total_amount,
+            $id
+        );
+
+        $stmt->execute();
+
+        $_SESSION['success_projects'] = "Project updated successfully.";
+        // Get admin name safely
+        $admin_name = $_SESSION['username'] ?? $_SESSION['user_name'] ?? 'System';
+        $changes = [];
+
+        // Compare important fields
+        if ($project['name'] !== $name) {
+            $changes[] = "Name changed from '{$project['name']}' to '{$name}'";
         }
-        $stmt->close();
-    }
+
+        if ($project['status'] !== $status) {
+            $changes[] = "Status changed from '{$project['status']}' to '{$status}'";
+        }
+
+        if ((float)$project['total_amount'] !== (float)$total_amount) {
+            $changes[] = "Total Amount changed from " .
+                number_format($project['total_amount'],2) .
+                " to " .
+                number_format($total_amount,2);
+        }
+
+        if ($project['location'] !== $location) {
+            $changes[] = "Location changed from '{$project['location']}' to '{$location}'";
+        }
+
+        if ($project['project_manager'] !== $project_manager) {
+            $changes[] = "Project Manager changed from '{$project['project_manager']}' to '{$project_manager}'";
+        }
+
+        // If nothing changed
+        if (empty($changes)) {
+            $changes[] = "Project details were updated.";
+        }
+
+        // Convert to readable sentence
+       $change_text = implode("; ", $changes);
+    $log_description = "Project '{$new_name}' (ID: {$id}) was updated by {$admin_name}. Changes: {$change_text}";
+    $audit->log('UPDATE', 'Project', $log_description);
 }
+        header("Location: main.php?page=projects/list&id=".$id);
+        exit;
+    }
 ?>
 
-<div class="container py-4">
-    <div class="card">
-        <div class="card-header d-flex justify-content-between align-items-center">
-            <h5 class="mb-0">
-                <i class="fa fa-edit me-2"></i>Edit Project: <?= htmlspecialchars($project['name']) ?>
-            </h5>
-            <a href="main.php?page=projects/list" class="btn btn-secondary btn-sm">
-                <i class="fa fa-arrow-left me-1"></i> Back to List
-            </a>
-        </div>
-        <div class="card-body">
-            <?php if (!empty($errors)): ?>
-                <div class="alert alert-danger">
-                    <ul class="mb-0">
-                        <?php foreach ($errors as $error): ?>
-                            <li><?= htmlspecialchars($error) ?></li>
-                        <?php endforeach; ?>
-                    </ul>
-                </div>
-            <?php endif; ?>
+            <div class="container py-4">
+                <div class="card">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h4 class="mb-2">
+                            <i class="fa fa-edit me-2"></i>Edit Project
+                        </h4>
+                    </div>
+                    <div class="card-body">
+                        <?php if ($errors): ?>
+                        <div class="alert alert-danger">
+                            <?= implode('<br>', $errors) ?>
+                        </div>
+                        <?php endif; ?>
 
-            <form action="" method="POST" class="row g-3">
-                <div class="col-md-6">
-                    <label>Project Name <span class="text-danger">*</span></label>
-                    <input type="text" name="name" class="form-control" value="<?= htmlspecialchars($project['name']) ?>">
-                </div>
-                <div class="col-md-6">
-                    <label>Date <span class="text-danger">*</span></label>
-                    <input type="date" name="date" class="form-control" value="<?= htmlspecialchars($project['date']) ?>">
-                </div>
-                <div class="col-md-6">
-                    <label>Location <span class="text-danger">*</span></label>
-                    <input type="text" name="location" class="form-control" value="<?= htmlspecialchars($project['location']) ?>">
-                </div>
-                <div class="col-md-6">
-                    <label>Contractor <span class="text-danger">*</span></label>
-                    <input type="text" name="contractor" class="form-control" value="<?= htmlspecialchars($project['contractor']) ?>">
-                </div>
-                <div class="col-md-6">
-                    <label>Project Size <span class="text-danger">*</span></label>
-                    <input type="text" name="size" class="form-control" value="<?= htmlspecialchars($project['size']) ?>">
-                </div>
-                <div class="col-md-6">
-                    <label>Start Date <span class="text-danger">*</span></label>
-                    <input type="date" name="start_date" class="form-control" value="<?= htmlspecialchars($project['start_date']) ?>">
-                </div>
-                <div class="col-md-6">
-                    <label>Customer <span class="text-danger">*</span></label>
-                    <select name="customer_id" class="form-select">
-                        <option value="">-- Select Customer --</option>
-                        <?php foreach ($customers as $c): ?>
-                            <option value="<?= $c['id'] ?>" <?= $project['customer_id'] == $c['id'] ? 'selected' : '' ?>>
-                                <?= htmlspecialchars($c['name']) ?> <?= $c['company_name'] ? '(' . htmlspecialchars($c['company_name']) . ')' : '' ?>
-                            </option>
-                        <?php endforeach; ?>
-                    </select>
-                </div>
-                <div class="col-md-6">
-                    <label>Project Manager <span class="text-danger">*</span></label>
-                    <input type="text" name="project_manager" class="form-control" value="<?= htmlspecialchars($project['project_manager']) ?>">
-                </div>
-                <div class="col-12">
-                    <label>Description</label>
-                    <textarea name="description" class="form-control" rows="4"><?= htmlspecialchars($project['description']) ?></textarea>
-                </div>
-                <div class="col-12 text-end">
-                    <button type="submit" class="btn btn-success">Update Project</button>
-                </div>
-            </form>
-        </div>
-    </div>
+                        <form method="POST" class="row g-3">
+
+                        <div class="col-md-6">
+                        <label><strong>Project Name: </strong><span class="text-danger">*</span></label>
+                        <input class="form-control" name="name" value="<?= $project['name'] ?>" required>
+                        </div>
+
+                        <div class="col-md-2">
+                        <label><strong>Date: </strong><span class="text-danger">*</span></label>
+                        <input type="date" class="form-control" name="date" value="<?= $project['date'] ?>" required>
+                        </div>
+
+                        <div class="col-md-2">
+                        <label><strong>Start Date: </strong><span class="text-danger">*</span></label>
+                        <input type="date" class="form-control" name="start_date" value="<?= $project['start_date'] ?>" required>
+                        </div>
+
+                        <div class="col-md-2">
+                        <label><strong>Status: </strong><span class="text-danger">*</span></label>
+                        <select name="status" class="form-select" required>
+                        <option value="Pending" <?= $project['status']=="Pending"?'selected':'' ?>>Pending</option>
+                        <option value="Ongoing" <?= $project['status']=="Ongoing"?'selected':'' ?>>Ongoing</option>
+                        <option value="Finished" <?= $project['status']=="Finished"?'selected':'' ?>>Finished</option>
+                        <option value="Cancelled" <?= $project['status']=="Cancelled"?'selected':'' ?>>Cancelled</option>
+                        </select>
+                        </div>
+
+                        <div class="col-md-6">
+                        <label><strong>Location: </strong><span class="text-danger">*</span></label>
+                        <input class="form-control" name="location" value="<?= $project['location'] ?>" required>
+                        </div>
+
+                        <!-- <div class="col-md-3">
+                        <label><strong>Contractor: </strong><span class="text-danger">*</span></label>
+                        <input class="form-control" name="contractor" value="<?= $project['contractor'] ?>" required>
+                        </div> -->
+
+                        <div class="col-md-2">
+                            <label><strong>Project Size: </strong><span class="text-danger">*</span></label>
+                            <input class="form-control" name="size" id="projectSize" readonly value="<?= $project['size'] ?>" required> 
+                        </div>
+
+
+                        <div class="col-md-4">
+                        <label><strong>Contractor/ Customer: </strong><span class="text-danger">*</span></label>
+                        <select name="customer_id" class="form-select">
+                        <?php while($c=$customers->fetch_assoc()): ?>
+                        <option value="<?= $c['id'] ?>" <?= $project['customer_id']==$c['id']?'selected':'' ?>>
+                        <?= $c['name'] ?> <?= $c['company_name']?'('.$c['company_name'].')':'' ?>
+                        </option>
+                        <?php endwhile; ?>
+                        </select>
+                        </div>
+
+                    <!-- Charge/s Section -->
+                    <div class="mb-3"><strong>Charge/s:</strong></div>
+
+                            <!-- Straight to Finish -->
+                            <div class="row align-items-center mb-2">
+                                <div class="col-md-4">
+                                    <input type="text" class="form-control" value="Straight to Finish — m²" readonly>
+                                </div>
+                                <div class="col-md-2">
+                                    <input type="text" name="straight_finish_area" class="form-control area-field" placeholder="Area" value="<?= inputValue($project['straight_finish_area'] ?? '') ?>">
+                                </div>
+                                <div class="col-md-3">
+                                    <input type="text" name="straight_finish_unit_cost" class="form-control unitcost-field" placeholder="Unit Cost" value="<?= inputValue($project['straight_finish_unit_cost'] ?? '') ?>">
+                                </div>
+                                <div class="col-md-3">
+                                    <input type="text" name="straight_finish_amount" class="form-control amount-field" placeholder="Amount" readonly value="<?= inputValue($project['straight_finish_amount'] ?? '') ?>">
+                                </div>
+                            </div>
+
+                            <!-- Rough Finish -->
+                            <div class="row align-items-center mb-2">
+                                <div class="col-md-4">
+                                    <input type="text" class="form-control" value="Rough Finish — m²" readonly>
+                                </div>
+                                <div class="col-md-2">
+                                    <input type="text" name="rough_finish_area" class="form-control area-field" placeholder="Area" value="<?= inputValue($project['rough_finish_area'] ?? '') ?>">
+                                </div>
+                                <div class="col-md-3">
+                                    <input type="text" name="rough_finish_unit_cost" class="form-control unitcost-field" placeholder="Unit Cost" value="<?= inputValue($project['rough_finish_unit_cost'] ?? '') ?>">
+                                </div>
+                                <div class="col-md-3">
+                                    <input type="text" name="rough_finish_amount" class="form-control amount-field" placeholder="Amount" readonly value="<?= inputValue($project['rough_finish_amount'] ?? '') ?>">
+                                </div>
+                            </div>
+
+                            <!-- Suspended Volume -->
+                            <div class="row align-items-center mb-2">
+                                <div class="col-md-4">
+                                    <input type="text" class="form-control" value="Suspended Volume — m³" readonly>
+                                </div>
+                                <div class="col-md-2">
+                                    <input type="text" name="suspended_volume_area" class="form-control area-field" placeholder="Area" value="<?= inputValue($project['suspended_volume_area'] ?? '') ?>">
+                                </div>
+                                <div class="col-md-3">
+                                    <input type="text" name="suspended_volume_unit_cost" class="form-control unitcost-field" placeholder="Unit Cost" value="<?= inputValue($project['suspended_volume_unit_cost'] ?? '') ?>">
+                                </div>
+                                <div class="col-md-3">
+                                    <input type="text" name="suspended_volume_amount" class="form-control amount-field" placeholder="Amount" readonly value="<?= inputValue($project['suspended_volume_amount'] ?? '') ?>">
+                                </div>
+                            </div>
+
+                            <!-- Mobilization Fee -->
+                            <div class="row align-items-center mb-2">
+                                <div class="col-md-4">
+                                    <input type="text" class="form-control" value="Mobilization Fee — lot" readonly>
+                                </div>
+                                <div class="col-md-2">
+                                    <input type="text" name="mobilization_fee_area" class="form-control area-field" placeholder="Area" value="<?= inputValue($project['mobilization_fee_area'] ?? '') ?>">
+                                </div>
+                                <div class="col-md-3">
+                                    <input type="text" name="mobilization_fee_unit_cost" class="form-control unitcost-field" placeholder="Unit Cost" value="<?= inputValue($project['mobilization_fee_unit_cost'] ?? '') ?>">
+                                </div>
+                                <div class="col-md-3">
+                                    <input type="text" name="mobilization_fee_amount" class="form-control amount-field" placeholder="Amount" readonly value="<?= inputValue($project['mobilization_fee_amount'] ?? '') ?>">
+                                </div>
+                            </div>
+
+                            <!-- Idle Time -->
+                            <div class="row align-items-center mb-2">
+                                <div class="col-md-4">
+                                    <input type="text" class="form-control" value="Idle Time Charge — hrs" readonly>
+                                </div>
+                                <div class="col-md-2">
+                                    <input type="text" name="idle_time_area" class="form-control area-field" placeholder="--" value="<?= inputValue($project['idle_time_area'] ?? '') ?>">
+                                </div>
+                                <div class="col-md-3">
+                                    <input type="text" name="idle_time_unit_cost" class="form-control unitcost-field" placeholder="--" value="<?= inputValue($project['idle_time_unit_cost'] ?? '') ?>">
+                                </div>
+                                <div class="col-md-3">
+                                    <input type="text" name="idle_time_amount" class="form-control amount-field manual-amount-field" data-manual="true" placeholder="Amount" value="<?= inputValue($project['idle_time_amount'] ?? '') ?>">
+                                </div>
+                            </div>
+
+                            <!-- Cancellation Fee -->
+                            <div class="row align-items-center mb-2">
+                                <div class="col-md-4">
+                                    <input type="text" class="form-control" value="Cancellation Fee — lot" readonly>
+                                </div>
+                                <div class="col-md-2">
+                                    <input type="text" name="cancellation_fee_area" class="form-control area-field" placeholder="--" value="<?= inputValue($project['cancellation_fee_area'] ?? '') ?>">
+                                </div>
+                                <div class="col-md-3">
+                                    <input type="text" name="cancellation_fee_unit_cost" class="form-control unitcost-field" placeholder="--" value="<?= inputValue($project['cancellation_fee_unit_cost'] ?? '') ?>">
+                                </div>
+                                <div class="col-md-3">
+                                    <input type="text" name="cancellation_fee_amount" class="form-control amount-field manual-amount-field" data-manual="true" placeholder="Amount" value="<?= inputValue($project['cancellation_fee_amount'] ?? '') ?>">
+                                </div>
+                            </div>
+
+                                        <div class="row mb-2 align-items-center">
+                            <!-- Label -->
+                            <div class="col-md-9 text-end">
+                                <span class="fw-bold">
+                                    Total Amount:
+                                </span>
+                            </div>
+
+                            <!-- Amount textbox (same size as above amounts) -->
+                        <div class="col-md-3">
+                            <input type="text"
+                                id="totalAmount"
+                                name="total_amount"
+                                class="form-control amount-field text-end fw-bold"
+                                value="<?= inputValue($project['total_amount'] ?? '') ?>"
+                            readonly>
+                        </div>
+                    </div>
+            <div class="col-12">
+        <label><strong>Description:</strong></label>
+    <textarea name="description" class="form-control"><?= $project['description'] ?></textarea>
 </div>
+                        <div class="d-flex justify-content-end gap-2">
+                            <a href="main.php?page=projects/list" class="btn btn-secondary">Cancel</a>
+                            <button class="btn btn-success" type="submit" id="updateBtn" disabled>Update</button>
+                        </div>
+                    </form>
+                </div>
+</div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const updateBtn = document.getElementById('updateBtn');
+
+    const originalValues = {};
+    const fieldsToWatch = ['name', 'date', 'start_date', 'status', 'location', 'contractor', 'customer_id', 'description'];
+
+    function storeOriginalValues() {
+        fieldsToWatch.forEach(name => {
+            const el = document.querySelector(`[name="${name}"]`);
+            if (el) originalValues[name] = (el.value || '').trim();
+        });
+        console.log('Original values:', originalValues);
+    }
+
+    function checkChanges() {
+        let hasChanges = false;
+
+        fieldsToWatch.forEach(name => {
+            const el = document.querySelector(`[name="${name}"]`);
+            if (!el) return;
+
+            const val = (el.value || '').trim();
+
+            if (val !== originalValues[name]) {
+                hasChanges = true;
+                console.log(`Changed: ${name} from "${originalValues[name]}" to "${val}"`);
+            }
+        });
+
+        // Toggle state + color
+        updateBtn.disabled = !hasChanges;
+    }
+
+    setTimeout(() => {
+        storeOriginalValues();
+        checkChanges();
+    }, 200);
+
+    fieldsToWatch.forEach(name => {
+        const el = document.querySelector(`[name="${name}"]`);
+        if (el) {
+            el.addEventListener('input', checkChanges);
+            el.addEventListener('change', checkChanges);
+        }
+    });
+});
+</script>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    function calculateProjectSize() {
+        const straightArea = cleanNumber(document.querySelector('input[name="straight_finish_area"]')?.value || '');
+        const roughArea = cleanNumber(document.querySelector('input[name="rough_finish_area"]')?.value || '');
+        const suspendedArea = cleanNumber(document.querySelector('input[name="suspended_volume_area"]')?.value || '');
+        
+        const totalSize = straightArea + roughArea + suspendedArea;
+        
+        const projectSizeInput = document.getElementById('projectSize');
+        if (projectSizeInput) {
+            if (totalSize > 0) {
+                projectSizeInput.value = formatWithGrouping(totalSize);
+            } else {
+                projectSizeInput.value = '';
+            }
+        }
+    }
+
+    function calculateAmount() {
+        let total = 0;
+
+        document.querySelectorAll('.amount-field').forEach(amountInput => {
+            const isManual = amountInput.dataset.manual === 'true';
+            let amount = 0;
+
+            if (isManual) {
+                amount = cleanNumber(amountInput.value);
+            } else {
+                const row = amountInput.closest('.row');
+                const rawArea = row.querySelector('.area-field')?.value || '';
+                const rawUnit = row.querySelector('.unitcost-field')?.value || '';
+
+                if (rawArea.replace(/,/g, '').trim() === '' && rawUnit.replace(/,/g, '').trim() === '') {
+                    amountInput.value = '';
+                    return;
+                }
+
+                const area = cleanNumber(rawArea);
+                const unitCost = cleanNumber(rawUnit);
+                amount = area * unitCost;
+                amountInput.value = amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            }
+
+            total += amount;
+        });
+
+        const totalAmountInput = document.getElementById('totalAmount');
+        if(totalAmountInput){
+            totalAmountInput.value = total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+        
+        calculateProjectSize();
+        
+        if (typeof window.checkChanges === 'function') {
+            window.checkChanges();
+        }
+    }
+
+    function cleanNumber(value) {
+        if (value === null || value === undefined) return 0;
+        const raw = value.toString().replace(/,/g, '').trim();
+        if (raw === '') return 0;
+        const num = parseFloat(raw);
+        return Number.isNaN(num) ? 0 : num;
+    }
+
+    function formatWithGrouping(value) {
+        const str = value.toString();
+        const [, decimals = ''] = str.split('.');
+        const fractionDigits = decimals.length > 0 ? decimals.length : 0;
+        return value.toLocaleString('en-US', {
+            minimumFractionDigits: fractionDigits,
+            maximumFractionDigits: fractionDigits
+        });
+    }
+
+    // Recalculate and format whenever Area or Unit Cost changes
+    document.querySelectorAll('.area-field, .unitcost-field').forEach(input => {
+        input.addEventListener('input', () => {
+            const raw = input.value.replace(/,/g, '').trim();
+            if (raw === '') {
+                input.value = '';
+                calculateAmount();
+                if (input.name === 'straight_finish_area' || input.name === 'rough_finish_area' || input.name === 'suspended_volume_area') {
+                    calculateProjectSize();
+                }
+                return;
+            }
+
+            const numericVal = parseFloat(raw);
+            input.value = Number.isNaN(numericVal) ? '' : formatWithGrouping(numericVal);
+            calculateAmount();
+            if (input.name === 'straight_finish_area' || input.name === 'rough_finish_area' || input.name === 'suspended_volume_area') {
+                calculateProjectSize();
+            }
+        });
+    });
+
+    // Manually entered amounts
+    document.querySelectorAll('.manual-amount-field').forEach(input => {
+        input.addEventListener('input', () => {
+            const raw = input.value.replace(/,/g, '').trim();
+            if (raw === '' || Number.isNaN(parseFloat(raw))) {
+                calculateAmount();
+                return;
+            }
+            calculateAmount();
+        });
+
+        input.addEventListener('blur', () => {
+            const raw = input.value.replace(/,/g, '').trim();
+            if (raw === '') {
+                input.value = '';
+                return;
+            }
+            const numericVal = parseFloat(raw);
+            input.value = Number.isNaN(numericVal)
+                ? ''
+                : numericVal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        });
+    });
+
+    // Initialize on page load with formatted inputs
+    document.querySelectorAll('.area-field, .unitcost-field').forEach(input => {
+        const raw = (input.value || '').replace(/,/g, '').trim();
+        if (raw === '') return;
+
+        const numericVal = parseFloat(raw);
+        if (!Number.isNaN(numericVal)) {
+            input.value = formatWithGrouping(numericVal);
+        }
+    });
+    
+    document.querySelectorAll('.manual-amount-field').forEach(input => {
+        const raw = (input.value || '').replace(/,/g, '').trim();
+        if (raw === '') return;
+
+        const numericVal = parseFloat(raw);
+        if (!Number.isNaN(numericVal)) {
+            input.value = numericVal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+    });
+    
+    calculateAmount();
+    calculateProjectSize();
+});
+</script>

@@ -18,24 +18,25 @@ if (!$product) {
 ?>
 <div class="container py-4">
   <div class="card">
-    <div class="card-header d-flex justify-content-between align-items-center">
-      <h5 class="mb-0"><i class="fa fa-box me-2"></i>Product Details: <?= htmlspecialchars($product['product_title']) ?></h5>
-      <a href="main.php?page=inventory/list" class="btn btn-primary btn-sm">
-        <i class="fa fa-arrow-left me-1"></i> Back to List
+    <div class="d-flex justify-content-between align-items-center p-3 border-bottom">
+      <h4 class="mb-0"><i class="fa fa-eye me-2"></i>View Product Details</h4>
+      <a href="main.php?page=inventory/list" class="btn btn-primary ">
+        <i class="fa fa-arrow-left me-2"></i>Back to List
       </a>
     </div>
-    <div class="card-body">
-      <table class="table table-bordered">
-        <tr><th>Product Name</th><td><?= htmlspecialchars($product['product_title']) ?></td></tr>
-        <tr><th>Category</th><td><?= htmlspecialchars($product['category']) ?></td></tr>
-        <tr><th>Description</th><td><?= nl2br(htmlspecialchars($product['description'] ?? '')) ?></td></tr>
-        <tr><th>Quantity</th><td><?= $product['quantity'] ?></td></tr>
-        <tr><th>In Stock</th><td><?= $product['in_stock'] ?></td></tr>
-        <tr><th>Buying Price</th><td>₱<?= number_format($product['buying_price'], 2) ?></td></tr>
-        <tr><th>Selling Price</th><td>₱<?= number_format($product['selling_price'], 2) ?></td></tr>
-        <tr><th>Supplier ID</th><td><?= $product['supplier_id'] ?? 'None' ?></td></tr>
-        <tr><th>Date Added</th><td><?= date('M d, Y', strtotime($product['created_at'])) ?></td></tr>
+
+      <table class="table table-sm table-bordered mb-0">
+        <tr>
+          <th style="width: 250px;" class="ps-3">Product Name</th><td class="ps-3"><?= htmlspecialchars($product['product_title']) ?></td></tr>
+        <tr>
+          <th style="width: 250px;" class="ps-3">Category</th><td class="ps-3"><?= htmlspecialchars($product['category']) ?></td></tr>
+        <tr><th style="width: 250px;" class="ps-3">Description</th><td class="ps-3"><?= nl2br(htmlspecialchars($product['description'] ?? '')) ?></td></tr>
+        <tr><th style="width: 250px;" class="ps-3">Quantity</th><td class="ps-3"><?= $product['quantity'] ?></td></tr>
+        <tr><th style="width: 250px;" class="ps-3">In Stock</th><td class="ps-3"><?= $product['in_stock'] ?></td></tr>
+        <tr><th style="width: 250px;" class="ps-3">Buying Price</th><td class="ps-3">₱<?= number_format($product['buying_price'], 2) ?></td></tr>
+        <tr><th style="width: 250px;" class="ps-3">Selling Price</th><td class="ps-3">₱<?= number_format($product['selling_price'], 2) ?></td></tr>
+        <tr><th style="width: 250px;" class="ps-3">Supplier ID</th><td class="ps-3"><?= $product['supplier_id'] ?? 'None' ?></td></tr>
+        <tr><th style="width: 250px;" class="ps-3">Date Added</th><td class="ps-3"><?= date('M d, Y', strtotime($product['created_at'])) ?></td></tr>
       </table>
-    </div>
   </div>
 </div>
